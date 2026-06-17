@@ -1,0 +1,24 @@
+# ── Assessment brief (marked "Confidential — for candidate evaluation only") ──
+# Not published to the public repo out of respect for that notice.
+Navaia-Assessment.pdf
+NavaiaForge-SDK-Assessment.txt
+
+# ── Secrets & local environment ──
+.env
+.env.local
+.forge_state.json
+
+# ── Session tooling ──
+.remember/
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# ── OS ──
+.DS_Store
+Thumbs.db
