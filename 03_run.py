@@ -1,8 +1,8 @@
 """Phase 4 — run the Content Studio pipeline and capture the result.
 
-Drives the 5-agent pipeline over the chat surface (see pipeline.py — the backend
-image ships chat-over-OpenRouter but not the task-runtime CLIs) and saves the
-assembled content package to ``output/last_run.md`` as evidence.
+Drives the 5-agent pipeline over the chat surface (see pipeline.py) and saves the
+content package plus each stage as its own artifact under ``output/``, then prints
+a rough usage/cost estimate.
 
     python 03_run.py
 """
@@ -16,6 +16,7 @@ from navaia_forge import NavaiaForgeError
 
 import config
 import content_studio as cs
+import usage
 from pipeline import run_pipeline
 
 # Windows consoles default to cp1252 and choke on emoji/unicode the models emit;
@@ -44,22 +45,29 @@ def main() -> int:
     topic = os.environ.get("NAVAIA_TOPIC", cs.DEMO_TOPIC)
     print(f"[..] running Content Studio pipeline on:\n     {topic}\n")
 
-    out = run_pipeline(client, wf_id, agent_ids, topic)
+    out = run_pipeline(client, wf_id, agent_ids, topic, cs.BRAND)
 
-    # Save the artifact FIRST so a console-encoding hiccup can never lose it.
-    path = config.ROOT / "output" / "last_run.md"
-    path.parent.mkdir(exist_ok=True)
-    path.write_text(out["package"], encoding="utf-8")
+    # Save the combined package + each stage as its own artifact.
+    out_dir = config.ROOT / "output"
+    out_dir.mkdir(exist_ok=True)
+    artifacts = {
+        "last_run.md": out["package"],
+        "dossier.md": out["dossier"],
+        "brief.md": out["brief"],
+        "article.md": out["article"],
+        "social.md": out["social"],
+        "newsletter.md": out["newsletter"],
+    }
+    for name, text in artifacts.items():
+        (out_dir / name).write_text(text or "", encoding="utf-8")
 
     print("\n[ok] pipeline complete — stage output sizes (chars):")
-    for k in ("dossier", "brief", "article", "social", "qa"):
-        print(f"     {k:9}: {len(out[k])}")
-    print(f"[ok] full content package ({len(out['package'])} chars) saved to {path}")
+    for k in ("dossier", "brief", "article", "social", "newsletter", "qa"):
+        print(f"     {k:10}: {len(out[k])}")
+    print(f"[ok] artifacts written to {out_dir}\\  (last_run.md + per-stage files)")
+    print("[..] " + usage.format_report(usage.estimate(out, cs.MODEL), cs.MODEL))
 
-    config.save_state(
-        last_topic=topic,
-        last_pipeline_conversations=out["conversation_ids"],
-    )
+    config.save_state(last_topic=topic, last_pipeline_conversations=out["conversation_ids"])
     return 0
 
 

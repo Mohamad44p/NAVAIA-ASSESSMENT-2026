@@ -67,7 +67,18 @@ def main() -> int:
     print(f"[ok] synced: action={result.get('action', '?')} cloud_id={cloud_wf_id}")
     config.save_state(cloud_workforce_id=cloud_wf_id, sync_action=result.get("action"))
 
-    # 2. Publish to the marketplace.
+    # 2. Publish to the marketplace (skip if it's already listed — the sync above
+    #    already updated the cloud agents/edges in place).
+    try:
+        existing = cloud.workforces.get(cloud_wf_id)
+    except NavaiaForgeError:
+        existing = None
+    if existing is not None and existing.is_public:
+        print(f"[ok] already published (moderation_status={existing.moderation_status}); "
+              "sync refreshed the listing's agents in place.")
+        config.save_state(published=True, moderation_status=existing.moderation_status)
+        return 0
+
     pub = cs.PUBLISH
     print(f"[..] publishing (category={pub['category']}, price_cents={pub['price_cents']})...")
     try:

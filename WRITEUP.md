@@ -37,7 +37,7 @@ I had previously explored, restructured here as a NavaiaForge multi-agent
 workforce. The design decisions, structure, and final editing are my own.
 
 **Shipped.** Synced to the Fareegi cloud and published free under category
-`content` (cloud workforce `c8f69a96-984c-456a-acf8-005c7dd0594c`, `is_public=true`,
-moderation pending). It appears on the marketplace at https://fareegi.navaia.sa
-once the Navaia team approves it. A real generated run is in
-[`output/last_run.md`](output/last_run.md).
+`content` (cloud workforce `c8f69a96-984c-456a-acf8-005c7dd0594c`) — **approved and
+live** on the marketplace at https://fareegi.navaia.sa. A real generated run is in
+[`output/last_run.md`](output/last_run.md), with each stage also saved as its own
+file under `output/`.
