@@ -110,6 +110,16 @@ differs from it in a few ways. What I found and how I handled it:
    `docker-compose.override.yml` runs it under emulation on amd64.
 5. **API-key auth.** `/auth/keys` authenticates via `Authorization: Bearer <jwt>`,
    not `X-API-Key` — `01_register.py` sends the token accordingly.
+6. **Missing schema.** The image's alembic migrations never create the
+   `knowledge_bases` / `knowledge_repos` / `knowledge_texts` / `github_oauth_tokens`
+   tables (only a `knowledge_bases` *column* on `agents`), yet `sync.export` queries
+   them. Create them once from the models:
+   `docker exec -i navaia-forge-api python - <<'PY'` … `Base.metadata.create_all` (see
+   commit history / project notes) — idempotent, only adds the missing tables.
+7. **Sync content hash.** The SDK's `sync.push` round-trips the export through a
+   pydantic model (drops nulls / applies defaults), re-serializing the JSON and
+   breaking the bundle's `content_hash` (cloud import → 422). `04_sync_publish.py`
+   streams the *raw* export JSON straight to the cloud import instead.
 
 ## Configuration notes
 

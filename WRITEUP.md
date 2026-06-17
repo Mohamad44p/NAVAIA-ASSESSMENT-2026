@@ -36,6 +36,8 @@ shape the agent instructions. The content-engine concept (research → write →
 I had previously explored, restructured here as a NavaiaForge multi-agent
 workforce. The design decisions, structure, and final editing are my own.
 
-<!-- Fill in after the live run / publish: -->
-<!-- - Marketplace listing: https://fareegi.navaia.sa/... -->
-<!-- - Example output: output/last_run.md -->
+**Shipped.** Synced to the Fareegi cloud and published free under category
+`content` (cloud workforce `c8f69a96-984c-456a-acf8-005c7dd0594c`, `is_public=true`,
+moderation pending). It appears on the marketplace at https://fareegi.navaia.sa
+once the Navaia team approves it. A real generated run is in
+[`output/last_run.md`](output/last_run.md).
