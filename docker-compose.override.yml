@@ -1,0 +1,13 @@
+# Local override for amd64 hosts.
+#
+# The published backend image (ghcr.io/navaiasolutions/navaia-forge-backend) is
+# currently built for linux/arm64 only. On an amd64 host (e.g. this Windows
+# machine) we run that one container under QEMU emulation; the infra services
+# (postgres/redis/weaviate) are multi-arch and stay native. On an arm64 host
+# this override is a no-op since the platform already matches.
+#
+# Usage:
+#   docker compose -f docker-compose.dist.yml -f docker-compose.override.yml up -d
+services:
+  navaia-forge-api:
+    platform: linux/arm64

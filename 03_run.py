@@ -1,8 +1,8 @@
-"""Phase 4 — run a task through the workforce and capture the result.
+"""Phase 4 — run the Content Studio pipeline and capture the result.
 
-Creates a task (topic = ``NAVAIA_TOPIC`` or the demo topic), waits for the
-pipeline to finish, prints the assembled package, and saves it to
-``output/last_run.md`` as evidence.
+Drives the 5-agent pipeline over the chat surface (see pipeline.py — the backend
+image ships chat-over-OpenRouter but not the task-runtime CLIs) and saves the
+assembled content package to ``output/last_run.md`` as evidence.
 
     python 03_run.py
 """
@@ -10,56 +10,57 @@ pipeline to finish, prints the assembled package, and saves it to
 from __future__ import annotations
 
 import os
-from pathlib import Path
+import sys
 
 from navaia_forge import NavaiaForgeError
 
 import config
 import content_studio as cs
+from pipeline import run_pipeline
+
+# Windows consoles default to cp1252 and choke on emoji/unicode the models emit;
+# emit UTF-8 (replacing anything unencodable) so console output never crashes.
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except (AttributeError, ValueError):
+    pass
 
 
 def main() -> int:
     state = config.load_state()
     wf_id = state.get("workforce_id")
-    if not wf_id:
-        print("No workforce_id in state. Run 02_build_workforce.py first.")
+    agent_ids = state.get("agent_ids") or {}
+    if not wf_id or not agent_ids:
+        print("Missing workforce / agent ids in state. Run 02_build_workforce.py first.")
         return 1
 
     client = config.local_client()
-    topic = os.environ.get("NAVAIA_TOPIC", cs.DEMO_TOPIC)
-
-    print(f"[..] creating task: {topic}")
-    task = client.tasks.create(workforce_id=wf_id, title=topic)
-    print(f"[ok] task {task.id} created (status={task.status}); waiting (up to 30 min)...")
-
     try:
-        final = client.tasks.wait_for_completion(task.id, poll_interval=10.0, timeout=1800.0)
+        client.health()
     except NavaiaForgeError as exc:
-        print(f"[fail] {exc}")
+        print(f"[fail] backend not reachable: {exc}")
         return 1
 
-    print(f"[ok] final status: {final.status}")
-    if final.error:
-        print(f"[warn] error field: {final.error}")
+    topic = os.environ.get("NAVAIA_TOPIC", cs.DEMO_TOPIC)
+    print(f"[..] running Content Studio pipeline on:\n     {topic}\n")
 
-    result = final.result or ""
-    print("\n" + "=" * 72 + "\nRESULT\n" + "=" * 72)
-    print(result if result else "(no result text on the task; check task logs / agent outputs)")
+    out = run_pipeline(client, wf_id, agent_ids, topic)
 
-    out = config.ROOT / "output" / "last_run.md"
-    out.parent.mkdir(exist_ok=True)
-    out.write_text(
-        f"# Content Studio — Task Result\n\n"
-        f"- **Topic:** {topic}\n"
-        f"- **Task ID:** {final.id}\n"
-        f"- **Status:** {final.status}\n\n"
-        f"---\n\n{result}\n",
-        encoding="utf-8",
+    # Save the artifact FIRST so a console-encoding hiccup can never lose it.
+    path = config.ROOT / "output" / "last_run.md"
+    path.parent.mkdir(exist_ok=True)
+    path.write_text(out["package"], encoding="utf-8")
+
+    print("\n[ok] pipeline complete — stage output sizes (chars):")
+    for k in ("dossier", "brief", "article", "social", "qa"):
+        print(f"     {k:9}: {len(out[k])}")
+    print(f"[ok] full content package ({len(out['package'])} chars) saved to {path}")
+
+    config.save_state(
+        last_topic=topic,
+        last_pipeline_conversations=out["conversation_ids"],
     )
-    print(f"\n[ok] saved result to {out}")
-
-    config.save_state(last_task_id=task.id, last_task_status=final.status)
-    return 0 if final.status == "done" else 2
+    return 0
 
 
 if __name__ == "__main__":

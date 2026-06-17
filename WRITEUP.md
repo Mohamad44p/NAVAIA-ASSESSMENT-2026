@@ -15,10 +15,19 @@ deliberate quality choices: the Researcher must cite sources and mark anything
 uncertain `[unverified]`, and the Editor fact-checks every claim back against the
 research dossier — so the output stays grounded rather than hallucinated.
 
-**Tech choices.** `runtime_mode="navaia_code"` (the OpenRouter-backed runtime)
-with every agent on `anthropic/claude-sonnet-4`. I started with one strong model
-everywhere for reliability; the design notes a follow-up option to drop the
-mechanical stages (Researcher, Repurposer) to a cheaper model to trim cost.
+**Tech choices & a real-world adaptation.** Every agent runs
+`anthropic/claude-sonnet-4.5` via OpenRouter (one strong model everywhere for
+reliability). The honest wrinkle: the published `latest` backend image doesn't
+bundle any of the task-execution runtime CLIs (`genexa`/`claude`/`claw`), so
+server-side multi-agent *task* runs can't execute on it. But the backend does
+serve **chat** replies directly against OpenRouter using each conversation's
+bound agent's own instructions. So I orchestrate the documented pipeline
+client-side over the chat API (`pipeline.py`): each stage is one conversation
+with that agent, fed the previous stage's output, the Editor does a focused
+fact-check pass, and the package is assembled deterministically — which also
+keeps every call under the backend's 60s chat timeout. The brief explicitly
+supports "chat with your agents," and this is the kind of pragmatic adaptation
+the real work calls for. (Full findings in the README.)
 
 **How I used AI.** I built this with Claude Code: it read the actual installed
 SDK source to get the API exactly right, scaffolded the phase scripts, and helped

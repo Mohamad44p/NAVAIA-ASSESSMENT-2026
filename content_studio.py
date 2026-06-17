@@ -27,8 +27,10 @@ WORKFORCE_DESCRIPTION = (
 RUNTIME_MODE = "navaia_code"
 
 MODEL_PROVIDER = "openrouter"
-# Full OpenRouter model id (override with NAVAIA_MODEL in .env.local).
-MODEL = os.environ.get("NAVAIA_MODEL", "anthropic/claude-sonnet-4")
+# Full OpenRouter model id (override with NAVAIA_MODEL in .env.local). We use
+# Sonnet 4.5 — current and higher-quality than the brief's claude-sonnet-4
+# example, while still cheap and reliable for every stage.
+MODEL = os.environ.get("NAVAIA_MODEL", "anthropic/claude-sonnet-4.5")
 
 
 # ── Agent instructions ───────────────────────────────────────────

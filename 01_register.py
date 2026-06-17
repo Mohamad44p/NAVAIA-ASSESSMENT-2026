@@ -47,10 +47,17 @@ def main() -> int:
         print(f"[ok] logged in as: {email}")
 
     # 3. Mint a long-lived API key (shown once).
-    authed = NavaiaForgeClient(base_url=base, api_key=pair.access_token, timeout=60.0)
-    key = authed.auth.create_key("content-studio")
-    config.save_state(local_api_key=key.api_key, account_email=email)
-    print(f"[ok] created API key {key.api_key[:10]}... (saved to .forge_state.json)")
+    #    The backend authenticates /auth/keys via `Authorization: Bearer <jwt>`
+    #    (X-API-Key is reserved for already-minted nf_ keys), so we send the
+    #    access token through the SDK's HTTP escape hatch rather than as api_key.
+    resp = anon.http.post(
+        "/auth/keys",
+        {"name": "content-studio"},
+        headers={"Authorization": f"Bearer {pair.access_token}"},
+    )
+    api_key_value = resp["api_key"]
+    config.save_state(local_api_key=api_key_value, account_email=email)
+    print(f"[ok] created API key {api_key_value[:10]}... (saved to .forge_state.json)")
 
     # 4. Sanity-check the key.
     check = config.local_client().auth.validate()
